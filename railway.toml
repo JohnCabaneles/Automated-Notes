@@ -1,0 +1,5 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacksConfig]
+phpVersion = "8.3"
