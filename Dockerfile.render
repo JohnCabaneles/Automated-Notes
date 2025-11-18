@@ -1,0 +1,47 @@
+FROM php:8.3-cli
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    zip \
+    unzip \
+    sqlite3 \
+    libsqlite3-dev \
+    nodejs \
+    npm
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_sqlite
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /app
+
+# Copy application files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Install Node dependencies and build
+RUN npm install && npm run build
+
+# Create database directory and file
+RUN mkdir -p database && \
+    touch database/database.sqlite && \
+    chmod -R 775 storage bootstrap/cache database
+
+# Clear Laravel caches
+RUN php artisan config:clear && \
+    php artisan cache:clear
+
+# Expose port
+EXPOSE 8080
+
+# Start command
+CMD php artisan storage:link && \
+    php artisan migrate --force && \
+    php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
