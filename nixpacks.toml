@@ -10,11 +10,9 @@ cmds = [
 
 [phases.build]
 cmds = [
-    'mkdir -p database',
+    'mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache database',
     'touch database/database.sqlite',
-    'chmod -R 775 storage bootstrap/cache database',
-    'php artisan config:clear',
-    'php artisan cache:clear'
+    'chmod -R 775 storage bootstrap/cache database'
 ]
 
 [start]
