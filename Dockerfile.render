@@ -50,8 +50,12 @@ RUN mkdir -p storage/framework/{sessions,views,cache} \
     touch database/database.sqlite && \
     chmod -R 777 storage bootstrap/cache database
 
+# Copy and set permissions for start script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
 # Expose port
 EXPOSE 8080
 
 # Start command
-CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan storage:link && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+CMD ["/start.sh"]
