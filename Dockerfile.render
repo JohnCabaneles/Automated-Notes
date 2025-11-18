@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     libsqlite3-dev \
     nodejs \
-    npm
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_sqlite
@@ -20,29 +21,37 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /app
 
-# Copy application files
-COPY . .
+# Copy composer files first for better caching
+COPY composer.json composer.lock ./
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# Install Node dependencies and build
-RUN npm install && npm run build
+# Copy package files
+COPY package*.json ./
 
-# Create database directory and file
-RUN mkdir -p database && \
+# Install Node dependencies
+RUN npm ci
+
+# Copy the rest of the application
+COPY . .
+
+# Run composer scripts after copying all files
+RUN composer dump-autoload --optimize
+
+# Build frontend assets
+RUN npm run build
+
+# Create necessary directories and set permissions
+RUN mkdir -p storage/framework/{sessions,views,cache} \
+    storage/logs \
+    bootstrap/cache \
+    database && \
     touch database/database.sqlite && \
-    chmod -R 775 storage bootstrap/cache database
-
-# Don't clear caches during build - do it at runtime
-# RUN php artisan config:clear && \
-#     php artisan cache:clear
-
-# Set proper permissions
-RUN chown -R www-data:www-data /app
+    chmod -R 777 storage bootstrap/cache database
 
 # Expose port
 EXPOSE 8080
 
-# Start command - run migrations and serve
-CMD ["sh", "-c", "php artisan config:clear && php artisan cache:clear && php artisan storage:link && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
+# Start command
+CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan storage:link && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-8080}"]
