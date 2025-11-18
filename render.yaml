@@ -1,7 +1,7 @@
 services:
   - type: web
     name: automated-notes
-    runtime: docker
+    env: docker
     plan: free
     dockerfilePath: ./Dockerfile.render
     envVars:
@@ -10,9 +10,9 @@ services:
       - key: APP_ENV
         value: production
       - key: APP_KEY
-        generateValue: true
+        sync: false
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: DB_CONNECTION
         value: sqlite
       - key: SESSION_DRIVER
